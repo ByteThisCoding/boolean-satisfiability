@@ -14,19 +14,22 @@ export class SatSolver {
         return this.findPartialSolution(conjunctions, new Map());
     }
 
+    /**
+     * Recursively make assignments to find a satisfying solution
+     * @param conjunctions 
+     * @param choicesSoFar 
+     */
     private static findPartialSolution(conjunctions: Set<string>[], choicesSoFar: Map<string, boolean>): Map<string, boolean> | null {
         //console.log("....", conjunctions, choicesSoFar);
         let normalVarName = "";
         let negVarName = "";
-        for (let i=0; !negVarName && i<conjunctions.length; i++) {
-            for (const varName of conjunctions[0]) {
-                normalVarName = varName.indexOf("-") === 0 ? varName.substring(1) : varName;
-                if (!choicesSoFar.has(normalVarName)) {
-                    negVarName = "-" + normalVarName;
-                    break;
-                }
-            }
-        }
+        for (const varName of conjunctions[0]) {
+			normalVarName = varName.indexOf("-") === 0 ? varName.substring(1) : varName;
+			if (!choicesSoFar.has(normalVarName)) {
+				negVarName = "-" + normalVarName;
+				break;
+			}
+		}
 
         //if this hasn't been assigned, we know no more valid choices exist
         if (!negVarName) {
@@ -48,14 +51,24 @@ export class SatSolver {
         }
 
         //if neither satisfied, try to make nested calls
-        choicesSoFar.set(normalVarName, true);
-        const trueNested = this.findPartialSolution(trueReduce, choicesSoFar);
+        //check the one with the least amount of remaining rows first
+        const trueFalse = [trueReduce, falseReduce];
+        const trueFalseVal = [true, false];
+        if (falseReduce.length < trueReduce.length) {
+            trueFalse[0] = falseReduce;
+            trueFalse[1] = trueReduce;
+            trueFalseVal[0] = false;
+            trueFalseVal[1] = true;
+        }
+
+        choicesSoFar.set(normalVarName, trueFalseVal[0]);
+        const trueNested = this.findPartialSolution(trueFalse[0], choicesSoFar);
         if (trueNested) {
             return trueNested;
         }
 
-        choicesSoFar.set(normalVarName, false);
-        const falseNested = this.findPartialSolution(falseReduce, choicesSoFar);
+        choicesSoFar.set(normalVarName, trueFalseVal[1]);
+        const falseNested = this.findPartialSolution(trueFalse[1], choicesSoFar);
         if (!falseNested) {
             choicesSoFar.delete(normalVarName);
         }
@@ -76,25 +89,13 @@ export class SatSolver {
 
         for (const conj of conjunctions) {
             //handle truthy
-            let trueConj = conj;
-            if (!trueConj.has(varName)) {
-                if (trueConj.has(negVarName)) {
-                    trueConj = new Set(conj);
-                    trueConj.delete(negVarName);
-                }
-
-                trueReduce.push(trueConj);
+            if (!conj.has(varName)) {
+                trueReduce.push(conj);
             }
 
             //handle falsey
-            let falseConj = conj;
-            if (!falseConj.has(negVarName)) {
-                if (falseConj.has(varName)) {
-                    falseConj = new Set(conj);
-                    falseConj.delete(varName);
-                }
-
-                falseReduce.push(falseConj);
+            if (!conj.has(negVarName)) {
+                falseReduce.push(conj);
             }
         }
 
