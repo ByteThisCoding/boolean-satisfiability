@@ -19,7 +19,10 @@ export class SatSolver {
      * @param conjunctions 
      * @param choicesSoFar 
      */
-    private static findPartialSolution(conjunctions: Set<string>[], choicesSoFar: Map<string, boolean>): Map<string, boolean> | null {
+    private static findPartialSolution(
+        conjunctions: Set<string>[],
+        choicesSoFar: Map<string, boolean>,
+    ): Map<string, boolean> | null {
         //console.log("....", conjunctions, choicesSoFar);
         let normalVarName = "";
         let negVarName = "";
